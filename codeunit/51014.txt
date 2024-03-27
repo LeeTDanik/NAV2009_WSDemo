@@ -1,0 +1,42 @@
+OBJECT Codeunit 51014 ADCS WS_
+{
+  OBJECT-PROPERTIES
+  {
+    Date=22.03.10;
+    Time=13:34:25;
+    Modified=Yes;
+    Version List=NAVW17.10;
+  }
+  PROPERTIES
+  {
+    Permissions=TableData 50020=rimd;
+    CFRONTMayUsePermissions=Yes;
+    OnRun=BEGIN
+          END;
+
+  }
+  CODE
+  {
+    VAR
+      ADCSManagement@1001 : Codeunit 51000;
+      cuno@1000000001 : Codeunit 396;
+
+    PROCEDURE ProcessDocument@1(VAR Document@1000 : Text[1024]);
+    VAR
+      InputXmlDocument@1001 : DotNet "'System.Xml, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlDocument";
+      OutputXmlDocument@1003 : DotNet "'System.Xml, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlDocument";
+      ADCSManagement@1000000000 : Codeunit 51000;
+    BEGIN
+
+      InputXmlDocument:= InputXmlDocument.XmlDocument;
+      InputXmlDocument.LoadXml(Document);
+      ADCSManagement.ProcessDocument(InputXmlDocument);
+      ADCSManagement.GetOutboundDocument(OutputXmlDocument);
+      Document := OutputXmlDocument.OuterXml;
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

@@ -1,0 +1,109 @@
+OBJECT Table 7700 Miniform Header
+{
+  OBJECT-PROPERTIES
+  {
+    Date=05.10.10;
+    Time=[ 9:36:10];
+    Modified=Yes;
+    Version List=NAVW16.00;
+  }
+  PROPERTIES
+  {
+    OnDelete=VAR
+               MiniFormLine@1000 : Record 7701;
+               MiniFormFunc@1001 : Record 7703;
+             BEGIN
+               MiniFormLine.RESET;
+               MiniFormLine.SETRANGE("Miniform Code",Code);
+               MiniFormLine.DELETEALL;
+
+               MiniFormFunc.RESET;
+               MiniFormFunc.SETRANGE("Miniform Code",Code);
+               MiniFormFunc.DELETEALL;
+             END;
+
+    CaptionML=[ENU=Miniform Header;
+               RUS=Заголовок мини-формы];
+    LookupFormID=Form7703;
+  }
+  FIELDS
+  {
+    { 1   ;   ;Code                ;Code20        ;CaptionML=RUS=Код;
+                                                   NotBlank=Yes }
+    { 11  ;   ;Description         ;Text30        ;CaptionML=RUS=Описание }
+    { 12  ;   ;No. of Records in List;Integer     ;CaptionML=RUS=Число записей в списке }
+    { 13  ;   ;Form Type           ;Option        ;CaptionML=RUS=Form Type;
+                                                   OptionString=Card,Selection List,Data List,Data List Input }
+    { 15  ;   ;Start Miniform      ;Boolean       ;OnValidate=VAR
+                                                                MiniformHeader@1000 : Record 7700;
+                                                              BEGIN
+                                                                MiniformHeader.SETFILTER(Code,'<>%1',Code);
+                                                                MiniformHeader.SETRANGE("Start Miniform",TRUE);
+                                                                IF MiniformHeader.FIND('-') THEN
+                                                                  ERROR(Text002);
+                                                              END;
+
+                                                   CaptionML=RUS=Запуск мини-формы }
+    { 20  ;   ;Handling Codeunit   ;Integer       ;TableRelation=Object.ID WHERE (Company Name=CONST(),
+                                                                                  Type=CONST(Codeunit));
+                                                   CaptionML=RUS=Модуль обработки Codeunit }
+    { 21  ;   ;Next Miniform       ;Code20        ;TableRelation="Miniform Header";
+                                                   OnValidate=BEGIN
+                                                                IF "Next Miniform" = Code THEN
+                                                                  ERROR(Text000);
+
+                                                                IF "Form Type" IN ["Form Type"::"Selection List","Form Type"::"Data List Input"] THEN
+                                                                  ERROR(Text001,FIELDCAPTION("Form Type"),"Form Type");
+                                                              END;
+
+                                                   CaptionML=RUS=След. мини-форма }
+    { 25  ;   ;XMLin               ;BLOB          ;CaptionML=RUS=XMLin }
+  }
+  KEYS
+  {
+    {    ;Code                                    ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+    VAR
+      Text000@1001 : TextConst 'ENU=Recursion is not allowed.;RUS=Рекурсия не разрешена.';
+      Text001@1000 : TextConst 'ENU=%1 must not be %2.;RUS=%1 не должно равняться %2.';
+      Text002@1002 : TextConst 'ENU=There can only be one login form.;RUS=Может существовать только одна форма учетной записи.';
+
+    PROCEDURE SaveXMLin@1(DOMxmlin@1001 : DotNet "'System.Xml, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlDocument");
+    VAR
+      OutStrm@1000 : OutStream;
+      strg@1000000000 : BigText;
+      memstream@1000000001 : DotNet "'mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.IO.MemoryStream";
+      enc@1000000002 : DotNet "'mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Text.UTF8Encoding";
+      str@1000000003 : Text[1024];
+    BEGIN
+      XMLin.CREATEOUTSTREAM(OutStrm);
+      memstream:=memstream.MemoryStream;
+      enc:=enc.UTF8Encoding;
+      str:=DOMxmlin.InnerXml;
+      strg.ADDTEXT(str);
+      strg.WRITE(OutStrm);
+    END;
+
+    PROCEDURE LoadXMLin@2(VAR DOMxmlin@1001 : DotNet "'System.Xml, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlDocument");
+    VAR
+      InStrm@1000 : InStream;
+      strg@1000000000 : BigText;
+      str@1000000001 : Text[1024];
+    BEGIN
+      XMLin.CREATEINSTREAM(InStrm);
+      strg.READ(InStrm);
+      strg.GETSUBTEXT(str,1);
+      //If str='' then error('sgtr is null') else error(str);
+      DOMxmlin.LoadXml(str);
+    END;
+
+    BEGIN
+    END.
+  }
+}
+
